@@ -4,6 +4,39 @@ meta:
   id: wrk_846ab6b28a674ca38b8a3a7118430c8c
   created: 1745831897195
   modified: 1745831897195
+collection:
+  - name: investment
+    meta:
+      id: fld_df20f03e32b54e068d31976b87ddb0b2
+      created: 1745832352739
+      modified: 1745832352739
+      sortKey: -1745832352739
+      description: Everything about your investments
+  - name: sample
+    meta:
+      id: fld_ff0bf0c3cb32425489998d7cb67d8603
+      created: 1745832352740
+      modified: 1745832352740
+      sortKey: -1745832352740
+      description: This is a test api
+  - url: "{{ _.base_url }}/mockroute"
+    name: Get investment portfolio
+    meta:
+      id: req_1c8a390870d945229a2f4fc647e7fba2
+      created: 1745832352740
+      modified: 1745832352740
+      isPrivate: false
+      description: Retrieve details of the investment portfolio.
+      sortKey: -1745832352740
+    method: GET
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
 cookieJar:
   name: Default Jar
   meta:
@@ -15,8 +48,21 @@ environments:
   meta:
     id: env_6498626a0645911ce689c3be8dfb87f6141d323a
     created: 1745831903963
-    modified: 1745831903963
+    modified: 1745832352738
     isPrivate: false
+  data:
+    base_url: "{{ _.scheme }}://{{ _.host }}{{ _.base_path }}"
+  subEnvironments:
+    - name: OpenAPI env localhost:8000
+      meta:
+        id: env_57360ffc2f7e4b949be7ece6f340f32c
+        created: 1745832352739
+        modified: 1745832352739
+        isPrivate: false
+        sortKey: 1745832352739
+      data:
+        scheme: http
+        host: localhost:8000
 spec:
   contents:
     openapi: 3.0.0
@@ -100,17 +146,7 @@ spec:
               description: Not Found
             "500":
               description: Internal Server Error
-    components:
-      securitySchemes:
-        clientCredentials:
-          type: oauth2
-          flows:
-            clientCredentials:
-              tokenUrl: http://localhost:8000/token
-        bearerAuth:
-          type: http
-          scheme: bearer
   meta:
     id: spc_2370aa9a832c4bbcbb4569ddf93f7a94
     created: 1745831897198
-    modified: 1745831897199
+    modified: 1745832347699
