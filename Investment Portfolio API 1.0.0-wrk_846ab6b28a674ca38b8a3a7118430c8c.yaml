@@ -150,3 +150,21 @@ spec:
     id: spc_2370aa9a832c4bbcbb4569ddf93f7a94
     created: 1745831897198
     modified: 1745832347699
+testSuites:
+  - name: New Suite
+    meta:
+      id: uts_45fd04a574b04f15a6f86858134ddf8e
+      created: 1745832438774
+      modified: 1745832438774
+      sortKey: -1745832438775
+    tests:
+      - name: Returns 200
+        meta:
+          id: ut_3dc99f4f6f1f4ff5aeb7cbe16571f0ae
+          created: 1745832442482
+          modified: 1745832444713
+          sortKey: -1745832442482
+        requestId: req_1c8a390870d945229a2f4fc647e7fba2
+        code: |-
+          const response1 = await insomnia.send();
+          expect(response1.status).to.equal(200);
