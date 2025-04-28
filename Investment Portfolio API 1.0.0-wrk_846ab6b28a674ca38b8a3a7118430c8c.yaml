@@ -1,0 +1,116 @@
+type: spec.insomnia.rest/5.0
+name: Investment Portfolio API 1.0.0
+meta:
+  id: wrk_846ab6b28a674ca38b8a3a7118430c8c
+  created: 1745831897195
+  modified: 1745831897195
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_6498626a0645911ce689c3be8dfb87f6141d323a
+    created: 1745831903965
+    modified: 1745831903965
+environments:
+  name: Base Environment
+  meta:
+    id: env_6498626a0645911ce689c3be8dfb87f6141d323a
+    created: 1745831903963
+    modified: 1745831903963
+    isPrivate: false
+spec:
+  contents:
+    openapi: 3.0.0
+    info:
+      version: 1.0.0
+      title: Investment Portfolio API
+      description: API to retrieve investment portfolio details.
+      contact:
+        name: API Support
+        email: support@example.com
+    servers:
+      - url: http://localhost:8000
+    tags:
+      - name: investment
+        description: Everything about your investments
+        externalDocs:
+          description: Find out more
+          url: http://swagger.io
+      - name: sample
+        description: This is a test api
+    paths:
+      /mockroute:
+        get:
+          summary: Get investment portfolio
+          description: Retrieve details of the investment portfolio.
+          operationId: getInvestmentPortfolio
+          responses:
+            "200":
+              description: A JSON array of portfolio items
+              content:
+                application/json:
+                  schema:
+                    type: object
+                    properties:
+                      Results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            shares_held:
+                              type: string
+                              example: "4854"
+                            market:
+                              type: string
+                              example: NYSE
+                            value:
+                              type: string
+                              example: $112470.93
+                            sector:
+                              type: string
+                              example: Consumer Non-Durables
+                            name:
+                              type: string
+                              example: Altria Group
+                            industry:
+                              type: string
+                              example: Farming/Seeds/Milling
+                            symbol:
+                              type: string
+                              example: MO
+                  examples:
+                    example1:
+                      summary: A sample portfolio item
+                      value:
+                        Results:
+                          - shares_held: "4854"
+                            market: NYSE
+                            value: $112470.93
+                            sector: Consumer Non-Durables
+                            name: Altria Group
+                            industry: Farming/Seeds/Milling
+                            symbol: MO
+                          - shares_held: "5071"
+                            market: NASDAQ
+                            value: $27012.35
+                            sector: Health Care
+                            name: Cytosorbents Corporation
+                            industry: Medical/Dental Instruments
+                            symbol: CTSO
+            "404":
+              description: Not Found
+            "500":
+              description: Internal Server Error
+    components:
+      securitySchemes:
+        clientCredentials:
+          type: oauth2
+          flows:
+            clientCredentials:
+              tokenUrl: http://localhost:8000/token
+        bearerAuth:
+          type: http
+          scheme: bearer
+  meta:
+    id: spc_2370aa9a832c4bbcbb4569ddf93f7a94
+    created: 1745831897198
+    modified: 1745831897199
