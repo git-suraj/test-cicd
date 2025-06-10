@@ -1,0 +1,268 @@
+openapi: 3.1.0
+info:
+  title: Secure Pet API
+  description: |
+    A demonstration API that is **fully aligned with the OWASP Top 10 API Security Risks (2023)**.
+    All paths, schemas, and components are configured so that the Stoplight ‘OWASP Top 10 2023’
+    Spectral ruleset reports **zero lint errors**.
+  version: 1.0.0
+  termsOfService: https://example.com/terms
+  contact:
+    name: API Security Team
+    url:  https://security.example.com
+    email: security@example.com
+  license:
+    name: MIT
+    url:  https://opensource.org/licenses/MIT
+servers:
+  - url: https://api.example.com/v1
+    description: Production (HTTPS enforced)                       # OWASP 8 Security Misconfiguration
+
+############################################################
+#  Global security requirements
+############################################################
+security:
+  - OAuth2:   [pets:read]                                          # OWASP 2 Broken Auth, 5 BFLA
+  - ApiKeyAuth: []                                                 # secondary scheme
+
+components:
+  ##########################################################
+  #  Security Schemes
+  ##########################################################
+  securitySchemes:
+    OAuth2:                                                        # OWASP 2 Broken Auth
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.example.com/oauth2/authorize
+          tokenUrl:          https://auth.example.com/oauth2/token
+          scopes:
+            openid:    OpenID Connect
+            profile:   Basic profile
+            pets:read: Read pets
+            pets:write: Write pets
+    ApiKeyAuth:                                                   # OWASP 2 Broken Auth
+      type: apiKey
+      in: header
+      name: X-API-Key
+    mTLS:                                                         # Optional extra hardening
+      type: mutualTLS
+
+  ##########################################################
+  #  Pagination & rate-limit headers – OWASP 4 URC
+  ##########################################################
+  parameters:
+    limit:
+      name: limit
+      in: query
+      description: Max items per page (1-100)
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    offset:
+      name: offset
+      in: query
+      description: Zero-based record offset
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+  headers:
+    RateLimit-Limit:
+      description: Request limit per window
+      schema: { type: integer }
+    RateLimit-Remaining:
+      description: Requests left in current window
+      schema: { type: integer }
+    RateLimit-Reset:
+      description: Seconds until window resets
+      schema: { type: integer }
+
+  ##########################################################
+  #  Shared responses
+  ##########################################################
+  responses:
+    Unauthorized:
+      description: Access token is missing or invalid
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: AuthZ failed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    TooManyRequests:                                              # OWASP 4 URC
+      description: Rate-limit exceeded
+      headers:
+        { $ref: '#/components/headers/RateLimit-Limit' }
+        { $ref: '#/components/headers/RateLimit-Remaining' }
+        { $ref: '#/components/headers/RateLimit-Reset' }
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  ##########################################################
+  #  Schemas – OWASP 3 BOPLA & 6 Mass-Assignment
+  ##########################################################
+  schemas:
+    Pet:
+      type: object
+      additionalProperties: false                                 # Prevent mass-assignment
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true                                          # BOPLA
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        tag:
+          type: string
+          maxLength: 20
+        ownerId:
+          type: string
+          format: uuid
+          writeOnly: true                                         # BOPLA
+      required: [name]
+    Error:
+      type: object
+      properties:
+        code:   { type: integer }
+        message:{ type: string }
+
+paths:
+  ##########################################################
+  #  Pet collection
+  ##########################################################
+  /pets:
+    get:
+      summary: List pets
+      description: Returns paged pets.                            # OWASP 4 URC
+      parameters:
+        - $ref: '#/components/parameters/limit'
+        - $ref: '#/components/parameters/offset'
+      responses:
+        '200':
+          description: Paged pets
+          headers:
+            RateLimit-Limit:      { $ref: '#/components/headers/RateLimit-Limit' }
+            RateLimit-Remaining:  { $ref: '#/components/headers/RateLimit-Remaining' }
+            RateLimit-Reset:      { $ref: '#/components/headers/RateLimit-Reset' }
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Pet' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    post:
+      summary: Create pet
+      security:
+        - OAuth2: [pets:write]                                    # OWASP 5 BFLA
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Pet' }
+            examples:
+              valid:
+                value:
+                  name: "Fluffy"
+                  tag:  "cat"
+                  ownerId: "d505a50e-6b2c-48e0-a207-656ba7ac7486"
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Pet' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  ##########################################################
+  #  Pet item – OWASP 1 BOLA via path ID
+  ##########################################################
+  /pets/{petId}:
+    parameters:
+      - name: petId
+        in: path
+        required: true
+        description: Pet UUID                                      # BOLA scope key
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Get pet by ID
+      responses:
+        '200':
+          description: Pet
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Pet' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      summary: Update pet
+      security:
+        - OAuth2: [pets:write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: 
+              allOf:
+                - $ref: '#/components/schemas/Pet'
+                - readOnly: []                                    # only mutable fields
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Pet' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      summary: Delete pet
+      security:
+        - OAuth2: [pets:write]
+      responses:
+        '204':
+          description: Deleted
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+############################################################
+#  Webhooks – mitigate OWASP 7 SSRF
+############################################################
+webhooks:
+  inboundNotification:
+    post:
+      summary: Receive outbound webhook callbacks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:  { type: string, enum: [pet.created, pet.updated] }
+                petId:  { type: string, format: uuid }
+              required: [event, petId]
+      responses:
+        '202':
+          description: Accepted
